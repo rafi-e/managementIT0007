@@ -1,0 +1,1 @@
+ALTER TABLE "Attachment" ALTER COLUMN "publicId" DROP NOT NULL;
