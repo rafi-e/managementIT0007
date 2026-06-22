@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { useProjects, useCreateProject, useUpdateProject, useDeleteProject } from "@/hooks/use-projects";
@@ -47,6 +47,7 @@ import {
   Hash,
   Pencil,
   Trash2,
+  Search,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { formatRelativeTime, generateSlug } from "@/lib/utils";
@@ -94,7 +95,18 @@ export default function WorkspacePage() {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editColor, setEditColor] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery.trim()) return projects;
+    const query = searchQuery.toLowerCase();
+    return projects?.filter(
+      (p) =>
+        p.name.toLowerCase().includes(query) ||
+        p.description?.toLowerCase().includes(query)
+    );
+  }, [projects, searchQuery]);
 
   const error = wError || pError;
 
@@ -309,12 +321,23 @@ export default function WorkspacePage() {
         </Card>
       </div>
 
-      <div className="grid gap-3 sm:gap-6 grid-cols-1 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-6 grid-cols-1 lg:grid-cols-3 py-3 md:py-0">
         <div className="lg:col-span-2 space-y-3 sm:space-y-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <FolderKanban className="h-5 w-5" />
-            Projects
-          </h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold flex items-center gap-2 shrink-0">
+              <FolderKanban className="h-5 w-5" />
+              Projects
+            </h2>
+            <div className="relative max-w-xs w-full">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Search projects..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-9 text-sm"
+              />
+            </div>
+          </div>
           {(projects?.length || 0) === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-10 sm:py-16 text-center">
@@ -329,9 +352,21 @@ export default function WorkspacePage() {
                 </Button>
               </CardContent>
             </Card>
+          ) : filteredProjects?.length === 0 && searchQuery ? (
+            <div className="col-span-full">
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-10 sm:py-16 text-center">
+                  <Search className="h-12 w-12 text-muted-foreground/40 mb-3" />
+                  <p className="font-medium mb-1">No projects found</p>
+                  <p className="text-sm text-muted-foreground">
+                    No projects match &ldquo;{searchQuery}&rdquo;
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           ) : (
             <div className="grid gap-2 sm:gap-4 grid-cols-1 sm:grid-cols-2">
-              {projects?.map((project) => (
+              {filteredProjects?.map((project) => (
                 <Card
                   key={project.id}
                   className="cursor-pointer hover:shadow-md transition-shadow group"

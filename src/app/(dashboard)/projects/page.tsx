@@ -1,13 +1,15 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/use-auth";
 import { useWorkspaces } from "@/hooks/use-workspace";
 import { useProjects } from "@/hooks/use-projects";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FolderKanban, FolderOpen, Plus } from "lucide-react";
+import { FolderKanban, FolderOpen, Plus, Search } from "lucide-react";
 import { ProjectStatus } from "@/types";
 import { generateSlug } from "@/lib/utils";
 
@@ -15,6 +17,7 @@ export default function ProjectsPage() {
   const router = useRouter();
   const user = useCurrentUser();
   const { data: workspaces, isLoading: wLoading } = useWorkspaces();
+  const [searchQuery, setSearchQuery] = useState("");
 
   if (!user) return null;
 
@@ -60,11 +63,22 @@ export default function ProjectsPage() {
         </div>
       </div>
 
+      <div className="relative max-w-sm">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Input
+          placeholder="Search projects..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-8 h-9 text-sm"
+        />
+      </div>
+
       {workspaces.map((workspace) => (
         <WorkspaceProjectsSection
           key={workspace.id}
           workspaceId={workspace.id}
           workspaceName={workspace.name}
+          searchQuery={searchQuery}
           onProjectClick={(projectSlug) =>
             router.push(`/workspace/${workspace.id}/projects/${projectSlug}`)
           }
@@ -77,13 +91,25 @@ export default function ProjectsPage() {
 function WorkspaceProjectsSection({
   workspaceId,
   workspaceName,
+  searchQuery,
   onProjectClick,
 }: {
   workspaceId: string;
   workspaceName: string;
+  searchQuery: string;
   onProjectClick: (id: string) => void;
 }) {
   const { data: projects, isLoading } = useProjects(workspaceId);
+
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery.trim() || !projects) return projects;
+    const q = searchQuery.toLowerCase();
+    return projects.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q)
+    );
+  }, [projects, searchQuery]);
 
   return (
     <div className="space-y-4">
@@ -97,11 +123,13 @@ function WorkspaceProjectsSection({
             <Skeleton key={i} className="h-28 rounded-lg" />
           ))}
         </div>
-      ) : !projects?.length ? (
-        <p className="text-sm text-muted-foreground py-4">No projects in this workspace</p>
+      ) : !filteredProjects?.length ? (
+        <p className="text-sm text-muted-foreground py-4">
+          {searchQuery ? "No projects match your search" : "No projects in this workspace"}
+        </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
+          {filteredProjects.map((project) => (
             <Card
               key={project.id}
               className="cursor-pointer hover:shadow-md transition-shadow"

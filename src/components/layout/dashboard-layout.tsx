@@ -36,7 +36,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div
         className={cn(
-          "flex flex-1 flex-col transition-all duration-300",
+          "flex flex-1 w-full flex-col transition-all duration-300",
           sidebarOpen ? "md:ml-60" : "md:ml-16"
         )}
       >
