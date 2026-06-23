@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { generateToken } from "@/lib/utils";
+import { generateToken, getBaseUrl } from "@/lib/utils";
 import { sendInvitationEmail } from "@/lib/email";
 import { createNotifications } from "@/lib/notifications";
 import { NextResponse } from "next/server";
@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     email,
     inviterName: actorName,
     workspaceName: workspace.name,
-    inviteLink: `${process.env.AUTH_URL || "http://localhost:3000"}/login`,
+    inviteLink: `${getBaseUrl()}/login`,
   });
 
   return NextResponse.json({ success: true });

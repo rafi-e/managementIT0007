@@ -10,7 +10,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
 } from "./validations";
-import { generateToken } from "./utils";
+import { generateToken, getBaseUrl } from "./utils";
 import { sendResetPasswordEmail } from "./email";
 
 export async function login(formData: FormData) {
@@ -121,7 +121,7 @@ export async function forgotPassword(formData: FormData) {
     },
   });
 
-  const resetLink = `${process.env.AUTH_URL || "http://localhost:3000"}/reset-password?token=${token}`;
+  const resetLink = `${getBaseUrl()}/reset-password?token=${token}`;
 
   await sendResetPasswordEmail({
     email: user.email,
