@@ -18,16 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCreateTask } from "@/hooks/use-tasks";
-import { useWorkspaceMembers } from "@/hooks/use-workspace";
-import { useCurrentWorkspace } from "@/hooks/use-workspace";
-import { useQuery } from "@tanstack/react-query";
-import { cn, getInitials } from "@/lib/utils";
+import { useUnitKerjaList } from "@/hooks/use-unit-kerja";
 import { TaskStatus, TaskPriority } from "@/types";
-import { Plus } from "lucide-react";
+import { Plus, ListTodo, CalendarDays, Flag, Building2, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
-import { getLabelsAction } from "@/actions/task";
 
 interface TaskCreateDialogProps {
   projectId: string;
@@ -49,28 +44,20 @@ export function TaskCreateDialog({
 }: TaskCreateDialogProps) {
   const [open, setOpen] = useState(false);
   const createTask = useCreateTask();
-  const { currentWorkspace } = useCurrentWorkspace();
-  const { data: members } = useWorkspaceMembers(currentWorkspace?.id);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority>(TaskPriority.medium);
   const [dueDate, setDueDate] = useState(defaultDueDate || "");
-  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
-  const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
-
-  const { data: labels } = useQuery({
-    queryKey: ["labels"],
-    queryFn: getLabelsAction,
-  });
+  const [selectedUnitKerjaId, setSelectedUnitKerjaId] = useState<string>("");
+  const { data: unitKerjaList, isLoading: unitKerjaLoading } = useUnitKerjaList();
 
   const reset = () => {
     setTitle("");
     setDescription("");
     setPriority(TaskPriority.medium);
     setDueDate(defaultDueDate || "");
-    setSelectedAssigneeIds([]);
-    setSelectedLabelIds([]);
+    setSelectedUnitKerjaId("");
   };
 
   const handleSubmit = async () => {
@@ -83,8 +70,7 @@ export function TaskCreateDialog({
         status: TaskStatus.todo,
         priority: priority.toLowerCase() as TaskPriority,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-        assigneeIds: selectedAssigneeIds,
-        labelIds: selectedLabelIds,
+        unitKerjaId: selectedUnitKerjaId || undefined,
       },
       {
         onSuccess: () => {
@@ -94,18 +80,6 @@ export function TaskCreateDialog({
         },
         onError: () => toast.error("Failed to create task"),
       }
-    );
-  };
-
-  const toggleAssignee = (userId: string) => {
-    setSelectedAssigneeIds((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
-    );
-  };
-
-  const toggleLabel = (labelId: string) => {
-    setSelectedLabelIds((prev) =>
-      prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId]
     );
   };
 
@@ -119,120 +93,127 @@ export function TaskCreateDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-lg w-[calc(100%-2rem)] sm:w-full">
-        <DialogHeader>
-          <DialogTitle>Create Task</DialogTitle>
+      <DialogContent className="max-w-lg w-[calc(100%-2rem)] sm:w-full gap-0 p-0">
+        <DialogHeader className="px-6 pt-6 pb-0">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <ListTodo className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <DialogTitle className="text-lg">Create Task</DialogTitle>
+              <p className="text-sm text-muted-foreground">Add a new task to this project</p>
+            </div>
+          </div>
         </DialogHeader>
-        <div className="space-y-4">
+
+        <div className="px-6 py-5 space-y-5">
           <div className="space-y-1.5">
-            <Label>
+            <Label htmlFor="title" className="text-sm font-medium">
               Title <span className="text-destructive">*</span>
             </Label>
             <Input
+              id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter task title"
+              placeholder="What needs to be done?"
               autoFocus
+              className="h-10"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Description</Label>
+            <Label htmlFor="description" className="text-sm font-medium">Description</Label>
             <textarea
+              id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="min-h-[90px] w-full resize-none rounded-xl border border-input bg-transparent px-4 py-3 text-sm shadow-sm placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary transition-all"
               placeholder="Add a description (optional)"
             />
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-muted">
+                  <Flag className="h-3 w-3 text-muted-foreground" />
+                </span>
+                Priority
+              </Label>
+              <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
+                <SelectTrigger className="h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-muted">
+                  <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                </span>
+                Due Date
+              </Label>
+              <Input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="h-10"
+              />
+            </div>
+          </div>
+
           <div className="space-y-1.5">
-            <Label>Priority</Label>
-            <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
-              <SelectTrigger>
-                <SelectValue />
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-muted">
+                <Building2 className="h-3 w-3 text-muted-foreground" />
+              </span>
+              Unit Kerja
+            </Label>
+            <Select
+              value={selectedUnitKerjaId}
+              onValueChange={(v) => setSelectedUnitKerjaId(v === "__none__" ? "" : v)}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Pilih unit kerja (opsional)" />
               </SelectTrigger>
-              <SelectContent>
-                {PRIORITY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
+              <SelectContent className="max-h-60">
+                <SelectItem value="__none__">Tidak ada</SelectItem>
+                {unitKerjaLoading ? (
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">Memuat...</div>
+                ) : (unitKerjaList || []).length === 0 ? (
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">Tidak ada data unit kerja</div>
+                ) : (
+                  (unitKerjaList || []).map((uk) => (
+                    <SelectItem key={uk.id} value={uk.id}>
+                      {uk.kode} - {uk.nama}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
+        </div>
 
-          <div className="space-y-1.5">
-            <Label>Due Date</Label>
-            <Input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Assignees</Label>
-            <div className="flex flex-wrap gap-2">
-              {(members || []).map((member) => {
-                const isSelected = selectedAssigneeIds.includes(member.userId);
-                return (
-                  <button
-                    key={member.userId}
-                    onClick={() => toggleAssignee(member.userId)}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
-                      isSelected
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-input hover:bg-accent"
-                    )}
-                  >
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage src={member.user.image || undefined} />
-                      <AvatarFallback className="text-[8px]">
-                        {getInitials(member.user.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    {member.user.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Labels</Label>
-            <div className="flex flex-wrap gap-2">
-              {(labels || []).map((label) => {
-                const isSelected = selectedLabelIds.includes(label.id);
-                return (
-                  <button
-                    key={label.id}
-                    onClick={() => toggleLabel(label.id)}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
-                      isSelected ? "border-foreground" : "border-input hover:bg-accent"
-                    )}
-                  >
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: label.color || undefined }}
-                    />
-                    {label.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} disabled={!title.trim() || createTask.isPending}>
-              {createTask.isPending ? "Creating..." : "Create Task"}
-            </Button>
-          </div>
+        <div className="flex items-center justify-end gap-2 border-t bg-muted/20 px-6 py-4">
+          <Button variant="outline" onClick={() => setOpen(false)} className="h-9 px-4">
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={!title.trim() || createTask.isPending} className="h-9 px-5 gap-1.5">
+            {createTask.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            {createTask.isPending ? "Creating..." : "Create Task"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

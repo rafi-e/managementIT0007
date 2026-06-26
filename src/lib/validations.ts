@@ -39,9 +39,19 @@ export const taskSchema = z.object({
   dueDate: z.string().datetime().optional().nullable(),
   estimatedHours: z.number().positive().optional().nullable(),
   parentId: z.string().optional().nullable(),
+  unitKerjaId: z.string().optional().nullable(),
   order: z.number().optional(),
   assigneeIds: z.array(z.string()).optional(),
   labelIds: z.array(z.string()).optional(),
+});
+
+export const unitKerjaSchema = z.object({
+  kode: z.string().min(1, "Kode unit kerja wajib diisi").max(20),
+  nama: z.string().min(1, "Nama unit kerja wajib diisi").max(200),
+  alamat: z.string().max(500).optional(),
+  jenis: z.enum(["KC", "KCP", "KK", "Unit"]),
+  longitude: z.string().max(50).optional(),
+  latitude: z.string().max(50).optional(),
 });
 
 export const commentSchema = z.object({
@@ -72,6 +82,7 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type WorkspaceInput = z.infer<typeof workspaceSchema>;
 export type ProjectInput = z.infer<typeof projectSchema>;
 export type TaskInput = z.infer<typeof taskSchema>;
+export type UnitKerjaInput = z.infer<typeof unitKerjaSchema>;
 export type CommentInput = z.infer<typeof commentSchema>;
 export type SettingsInput = z.infer<typeof settingsSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;

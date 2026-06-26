@@ -30,14 +30,16 @@ const COLUMNS = [
 ];
 
 interface KanbanBoardProps {
+  tasks?: Task[];
   isLoading?: boolean;
   error?: Error | null;
   onRetry?: () => void;
 }
 
-export function KanbanBoard({ isLoading, error, onRetry }: KanbanBoardProps = {}) {
+export function KanbanBoard({ tasks: propTasks, isLoading, error, onRetry }: KanbanBoardProps = {}) {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const tasks = useTaskStore((s) => s.tasks);
+  const storeTasks = useTaskStore((s) => s.tasks);
+  const tasks = propTasks ?? storeTasks;
   const updateTask = useUpdateTask();
   const reorderTasks = useReorderTasks();
 
@@ -170,32 +172,47 @@ export function KanbanBoard({ isLoading, error, onRetry }: KanbanBoardProps = {}
     );
   }
 
+  const isFiltered = !!propTasks;
+
   return (
     <div className="flex min-h-0 gap-3 sm:gap-4 overflow-x-auto pb-2 scrollbar-thin snap-x snap-mandatory">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-{COLUMNS.map((column) => (
-  <KanbanColumn
-    key={column.id}
-    columnId={column.id}
-    title={column.title}
-    color={column.color}
-    borderColor={column.borderColor}
-    tasks={columnTasks[column.id] || []}
-  />
-))}
-        <DragOverlay>
-          {activeTask ? (
-            <div className="w-72 max-w-[85vw] opacity-90">
-              <KanbanCard task={activeTask} isDragOverlay />
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+      {isFiltered ? (
+        COLUMNS.map((column) => (
+          <KanbanColumn
+            key={column.id}
+            columnId={column.id}
+            title={column.title}
+            color={column.color}
+            borderColor={column.borderColor}
+            tasks={columnTasks[column.id] || []}
+          />
+        ))
+      ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          {COLUMNS.map((column) => (
+            <KanbanColumn
+              key={column.id}
+              columnId={column.id}
+              title={column.title}
+              color={column.color}
+              borderColor={column.borderColor}
+              tasks={columnTasks[column.id] || []}
+            />
+          ))}
+          <DragOverlay>
+            {activeTask ? (
+              <div className="w-72 max-w-[85vw] opacity-90">
+                <KanbanCard task={activeTask} isDragOverlay />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import type {
   WorkspaceInput,
   ProjectInput,
   TaskInput,
+  UnitKerjaInput,
 } from "./validations";
 import type { Task, Label } from "@/types";
 import { generateSlug } from "./utils";
@@ -152,6 +153,9 @@ function toTask(t: Record<string, unknown>): Task {
         (l: Record<string, unknown>) => l.label as Label
       ),
     })) as Task["subtasks"],
+    unitKerja: t.unitKerja
+      ? { id: (t.unitKerja as Record<string, unknown>).id as string, kode: (t.unitKerja as Record<string, unknown>).kode as string, nama: (t.unitKerja as Record<string, unknown>).nama as string }
+      : null,
   } as Task;
 }
 
@@ -161,6 +165,7 @@ export async function getAllTasks() {
       project: { select: { id: true, name: true } },
       createdBy: { select: { id: true, name: true, image: true } },
       updatedBy: { select: { id: true, name: true, image: true } },
+      unitKerja: { select: { id: true, kode: true, nama: true } },
       assignments: {
         include: {
           user: { select: { id: true, name: true, image: true } },
@@ -183,6 +188,7 @@ export async function getTasksByProjectId(projectId: string) {
     include: {
       createdBy: { select: { id: true, name: true, image: true } },
       updatedBy: { select: { id: true, name: true, image: true } },
+      unitKerja: { select: { id: true, kode: true, nama: true } },
       assignments: {
         include: {
           user: { select: { id: true, name: true, image: true } },
@@ -208,6 +214,7 @@ export async function getTaskById(taskId: string) {
       },
       createdBy: { select: { id: true, name: true, image: true } },
       updatedBy: { select: { id: true, name: true, image: true } },
+      unitKerja: { select: { id: true, kode: true, nama: true } },
       assignments: {
         include: {
           user: { select: { id: true, name: true, image: true } },
@@ -242,6 +249,7 @@ export async function getTaskById(taskId: string) {
 
 export async function createTask(data: TaskInput, createdById?: string) {
   const { assigneeIds, labelIds, ...taskData } = data;
+  if (taskData.unitKerjaId === "") taskData.unitKerjaId = null;
 
   const task = await prisma.task.create({
     data: {
@@ -262,6 +270,7 @@ export async function createTask(data: TaskInput, createdById?: string) {
     include: {
       createdBy: { select: { id: true, name: true, image: true } },
       updatedBy: { select: { id: true, name: true, image: true } },
+      unitKerja: { select: { id: true, kode: true, nama: true } },
       assignments: {
         include: {
           user: { select: { id: true, name: true, image: true } },
@@ -279,6 +288,7 @@ export async function updateTask(
   updatedById?: string
 ) {
   const { assigneeIds, labelIds, ...taskData } = data;
+  if (taskData.unitKerjaId === "") taskData.unitKerjaId = null;
 
   const updateData: Record<string, unknown> = { ...taskData, updatedById };
   if (data.dueDate !== undefined) {
@@ -309,6 +319,7 @@ export async function updateTask(
     include: {
       createdBy: { select: { id: true, name: true, image: true } },
       updatedBy: { select: { id: true, name: true, image: true } },
+      unitKerja: { select: { id: true, kode: true, nama: true } },
       assignments: {
         include: {
           user: { select: { id: true, name: true, image: true } },
@@ -584,4 +595,60 @@ export async function getAttachmentById(attachmentId: string) {
 
 export async function deleteAttachmentsByTaskId(taskId: string) {
   return prisma.attachment.deleteMany({ where: { taskId } });
+}
+
+// ─── Unit Kerja ─────────────────────────────────────────────────
+
+export async function getAllUnitKerja() {
+  return prisma.unitKerja.findMany({
+    orderBy: { createdAt: "asc" },
+    include: {
+      _count: { select: { tasks: true } },
+      tasks: {
+        select: { id: true, title: true, status: true },
+        take: 5,
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  });
+}
+
+export async function getUnitKerjaById(id: string) {
+  return prisma.unitKerja.findUnique({ where: { id } });
+}
+
+export async function getUnitKerjaByKode(kode: string) {
+  return prisma.unitKerja.findUnique({ where: { kode } });
+}
+
+export async function createUnitKerja(data: UnitKerjaInput) {
+  return prisma.unitKerja.create({
+    data: {
+      kode: data.kode,
+      nama: data.nama,
+      jenis: data.jenis,
+      alamat: data.alamat ?? null,
+      longitude: data.longitude ?? null,
+      latitude: data.latitude ?? null,
+    },
+  });
+}
+
+export async function updateUnitKerja(id: string, data: Partial<UnitKerjaInput>) {
+  const updateData: Record<string, unknown> = {};
+  if (data.kode !== undefined) updateData.kode = data.kode;
+  if (data.nama !== undefined) updateData.nama = data.nama;
+  if (data.alamat !== undefined) updateData.alamat = data.alamat;
+  if (data.jenis !== undefined) updateData.jenis = data.jenis;
+  if (data.longitude !== undefined) updateData.longitude = data.longitude;
+  if (data.latitude !== undefined) updateData.latitude = data.latitude;
+
+  return prisma.unitKerja.update({
+    where: { id },
+    data: updateData,
+  });
+}
+
+export async function deleteUnitKerja(id: string) {
+  return prisma.unitKerja.delete({ where: { id } });
 }

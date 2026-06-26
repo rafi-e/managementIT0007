@@ -22,12 +22,14 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTaskStore } from "@/store/use-task-store";
 import { useUpdateTask, useDeleteTask, useDeleteAttachment, useAddComment, useTask } from "@/hooks/use-tasks";
+import { useUnitKerjaList } from "@/hooks/use-unit-kerja";
 import { RichTextEditor } from "./rich-text-editor";
 import {
   Clock,
   MessageSquare,
   Image,
   Activity,
+  Building2,
   Trash2,
   Save,
   Pencil,
@@ -96,7 +98,9 @@ function TaskModalInner({ task }: { task: Task }) {
   const [localAttachments, setLocalAttachments] = useState(task.attachments || []);
   const [titleEditing, setTitleEditing] = useState(false);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
+  const [unitKerjaId, setUnitKerjaId] = useState<string>(task.unitKerjaId || "");
   const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const { data: unitKerjaList, isLoading: unitKerjaLoading } = useUnitKerjaList();
   const supabase = useMemo(() => createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -140,6 +144,7 @@ function TaskModalInner({ task }: { task: Task }) {
           dueDate: dueDate ? new Date(dueDate).toISOString() : null,
           assigneeIds: selectedAssigneeIds,
           labelIds: selectedLabelIds,
+          unitKerjaId: unitKerjaId || null,
         },
       },
       {
@@ -160,6 +165,7 @@ function TaskModalInner({ task }: { task: Task }) {
       setDueDate(task.dueDate ? task.dueDate.split("T")[0] : "");
       setSelectedAssigneeIds(task.assignments?.map((u) => u.id) || []);
       setSelectedLabelIds(task.labels?.map((l) => l.id) || []);
+      setUnitKerjaId(task.unitKerjaId || "");
       setSubtasks(task.subtasks || []);
       setIsEditing(false);
     } else {
@@ -427,6 +433,14 @@ function TaskModalInner({ task }: { task: Task }) {
                     <span>Due {formatDate(dueDate)}</span>
                   </div>
                 )}
+                {task.unitKerja && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Building2 className="h-3.5 w-3.5" />
+                    <span>
+                      <span className="font-medium text-foreground">{task.unitKerja.kode}</span> - {task.unitKerja.nama}
+                    </span>
+                  </div>
+                )}
                 {task.createdBy && (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Activity className="h-3.5 w-3.5" />
@@ -487,6 +501,31 @@ function TaskModalInner({ task }: { task: Task }) {
                       value={dueDate}
                       onChange={(e) => setDueDate(e.target.value)}
                     />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground">Unit Kerja</Label>
+                    <Select
+                      value={unitKerjaId || "__none__"}
+                      onValueChange={(v) => setUnitKerjaId(v === "__none__" ? "" : v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih unit kerja" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        <SelectItem value="__none__">Tidak ada</SelectItem>
+                        {unitKerjaLoading ? (
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">Memuat...</div>
+                        ) : (unitKerjaList || []).length === 0 ? (
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">Tidak ada data unit kerja</div>
+                        ) : (
+                          (unitKerjaList || []).map((uk) => (
+                            <SelectItem key={uk.id} value={uk.id}>
+                              {uk.kode} - {uk.nama}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 

@@ -12,6 +12,13 @@ export enum WorkspaceRole {
   guest = 'guest',
 }
 
+export enum JenisUnitKerja {
+  KC = 'KC',
+  KCP = 'KCP',
+  KK = 'KK',
+  Unit = 'Unit',
+}
+
 export enum ProjectStatus {
   active = 'active',
   archived = 'archived',
@@ -125,6 +132,8 @@ export interface Task {
   estimatedHours: number | null;
   order: number;
   parentId: string | null;
+  unitKerjaId: string | null;
+  unitKerja?: { id: string; kode: string; nama: string } | null;
   subtasks: Task[];
   assignments: User[];
   labels: Label[];
@@ -136,6 +145,20 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   _count?: { comments: number; subtasks: number; attachments: number };
+}
+
+export interface UnitKerja {
+  id: string;
+  kode: string;
+  nama: string;
+  alamat: string | null;
+  jenis: JenisUnitKerja;
+  longitude: string | null;
+  latitude: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { tasks: number };
+  tasks?: { id: string; title: string; status: string }[];
 }
 
 export interface Project {

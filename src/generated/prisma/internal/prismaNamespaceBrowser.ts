@@ -68,6 +68,7 @@ export const ModelName = {
   TimeEntry: 'TimeEntry',
   NotificationSetting: 'NotificationSetting',
   ActivityLog: 'ActivityLog',
+  UnitKerja: 'UnitKerja',
   Notification: 'Notification'
 } as const
 
@@ -208,6 +209,7 @@ export const TaskScalarFieldEnum = {
   id: 'id',
   projectId: 'projectId',
   parentId: 'parentId',
+  unitKerjaId: 'unitKerjaId',
   title: 'title',
   description: 'description',
   status: 'status',
@@ -311,6 +313,21 @@ export const ActivityLogScalarFieldEnum = {
 } as const
 
 export type ActivityLogScalarFieldEnum = (typeof ActivityLogScalarFieldEnum)[keyof typeof ActivityLogScalarFieldEnum]
+
+
+export const UnitKerjaScalarFieldEnum = {
+  id: 'id',
+  kode: 'kode',
+  nama: 'nama',
+  alamat: 'alamat',
+  jenis: 'jenis',
+  longitude: 'longitude',
+  latitude: 'latitude',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UnitKerjaScalarFieldEnum = (typeof UnitKerjaScalarFieldEnum)[keyof typeof UnitKerjaScalarFieldEnum]
 
 
 export const NotificationScalarFieldEnum = {

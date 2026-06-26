@@ -47,6 +47,7 @@ import {
   AlertCircle,
   ArrowUp,
   ArrowDown,
+  Building2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -343,6 +344,9 @@ export function TaskTableView({ projectId, projectName, projectColor, isLoading,
                   <SortIcon field="priority" sortField={sortField} sortDir={sortDir} />
                 </span>
               </th>
+              <th className="px-3 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <span className="inline-flex items-center gap-1">Unit Kerja</span>
+              </th>
               <th
                 className="cursor-pointer px-3 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider"
                 onClick={() => toggleSort("dueDate")}
@@ -501,6 +505,21 @@ export function TaskTableView({ projectId, projectName, projectColor, isLoading,
                     </Select>
                   </td>
 
+                  {/* Unit Kerja */}
+                  <td className="px-3 py-2.5">
+                    {task.unitKerja ? (
+                      <Badge
+                        variant="secondary"
+                        className="text-[11px] px-1.5 py-0 font-normal gap-1"
+                      >
+                        <Building2 className="h-3 w-3" />
+                        {task.unitKerja.kode || task.unitKerja.nama}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/40 italic">—</span>
+                    )}
+                  </td>
+
                   {/* Due Date */}
                   <td className="px-3 py-2.5">
                     {task.dueDate ? (
@@ -614,7 +633,7 @@ export function TaskTableView({ projectId, projectName, projectColor, isLoading,
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-6 py-16 text-center">
+                <td colSpan={8} className="px-6 py-16 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <Search className="h-8 w-8 text-muted-foreground/30" />
                     <p className="text-sm font-medium text-muted-foreground">No tasks found</p>
@@ -671,6 +690,12 @@ export function TaskTableView({ projectId, projectName, projectColor, isLoading,
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-muted-foreground">
+                  {task.unitKerja && (
+                    <span className="inline-flex items-center gap-1">
+                      <Building2 className="h-3 w-3" />
+                      {task.unitKerja.kode || task.unitKerja.nama}
+                    </span>
+                  )}
                   {task.dueDate && (
                     <span className={cn("inline-flex items-center gap-1", isOverdue && "text-red-500")}>
                       <Calendar className="h-3 w-3" />

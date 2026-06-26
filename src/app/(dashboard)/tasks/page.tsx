@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useCurrentUser } from "@/hooks/use-auth";
 import { useAllTasks } from "@/hooks/use-tasks";
+import { useUnitKerjaList } from "@/hooks/use-unit-kerja";
 import { useTaskStore } from "@/store/use-task-store";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn, formatRelativeTime, getInitials, stripHtml } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskStatus, TaskPriority } from "@/types";
 import {
   ListTodo,
@@ -32,6 +35,9 @@ import {
   ChevronRight,
   Clock,
   Flag,
+  Building2,
+  FilterX,
+  X,
 } from "lucide-react";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -48,12 +54,11 @@ const PRIORITY_LABELS: Record<string, string> = {
   urgent: "Urgent",
 };
 
-const STATUS_OPTIONS = [
+const ACTIVE_STATUS_OPTIONS = [
   { value: "all", label: "All Statuses" },
   { value: TaskStatus.todo, label: "To Do" },
   { value: TaskStatus.in_progress, label: "In Progress" },
   { value: TaskStatus.review, label: "Review" },
-  { value: TaskStatus.completed, label: "Completed" },
 ];
 
 const PRIORITY_OPTIONS = [
@@ -89,18 +94,43 @@ const PROJECT_COLORS = [
   "bg-indigo-500",
 ];
 
-export default function TasksPage() {
+function TasksPageInner() {
   const user = useCurrentUser();
   const { data: allTasks, isLoading } = useAllTasks();
   const tasks = useMemo(() => allTasks ?? [], [allTasks]);
   const setSelectedTask = useTaskStore((s) => s.setSelectedTask);
 
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "all");
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [unitKerjaFilter, setUnitKerjaFilter] = useState("");
+  const [tab, setTab] = useState<"active" | "completed">(
+    (searchParams.get("tab") as "active" | "completed") || "active"
+  );
+  const [preset, setPreset] = useState<"all" | "pending" | "overdue">(
+    (searchParams.get("preset") as "all" | "pending" | "overdue") || "all"
+  );
+  const { data: unitKerjaList } = useUnitKerjaList();
 
   const filtered = useMemo(() => {
     let result = [...tasks];
+
+    if (tab === "active") {
+      result = result.filter((t) => t.status !== TaskStatus.completed);
+      if (preset === "pending") {
+        result = result.filter(
+          (t) => t.status === TaskStatus.todo || t.status === TaskStatus.in_progress
+        );
+      } else if (preset === "overdue") {
+        result = result.filter(
+          (t) => t.dueDate && new Date(t.dueDate) < new Date()
+        );
+      }
+    } else {
+      result = result.filter((t) => t.status === TaskStatus.completed);
+    }
+
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -109,14 +139,17 @@ export default function TasksPage() {
           t.description?.toLowerCase().includes(q)
       );
     }
-    if (statusFilter !== "all") {
+    if (tab === "active" && statusFilter !== "all") {
       result = result.filter((t) => t.status === statusFilter);
     }
     if (priorityFilter !== "all") {
       result = result.filter((t) => t.priority === priorityFilter);
     }
+    if (unitKerjaFilter) {
+      result = result.filter((t) => t.unitKerjaId === unitKerjaFilter);
+    }
     return result;
-  }, [tasks, search, statusFilter, priorityFilter]);
+  }, [tasks, tab, preset, search, statusFilter, priorityFilter, unitKerjaFilter]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, typeof filtered>();
@@ -130,19 +163,23 @@ export default function TasksPage() {
     );
   }, [filtered]);
 
-  const stats = useMemo(() => {
-    const total = tasks.length;
+  const activeStats = useMemo(() => {
+    const total = tasks.filter((t) => t.status !== TaskStatus.completed).length;
     const pending = tasks.filter(
       (t) => t.status === TaskStatus.todo || t.status === TaskStatus.in_progress
     ).length;
-    const completed = tasks.filter((t) => t.status === TaskStatus.completed).length;
     const overdue = tasks.filter(
       (t) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== TaskStatus.completed
     ).length;
-    return { total, pending, completed, overdue };
+    return { total, pending, overdue };
   }, [tasks]);
 
-  const activeFilters = statusFilter !== "all" || priorityFilter !== "all" || search !== "";
+  const completedStats = useMemo(() => {
+    const total = tasks.filter((t) => t.status === TaskStatus.completed).length;
+    return { total };
+  }, [tasks]);
+
+  const activeFilters = (tab === "active" && statusFilter !== "all") || priorityFilter !== "all" || unitKerjaFilter !== "" || search !== "";
 
   if (!user) return null;
 
@@ -159,74 +196,112 @@ export default function TasksPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-4">
-        <Card className="relative overflow-hidden">
-          <CardContent className="p-3 sm:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total</p>
-              <div className="rounded-lg bg-blue-100 dark:bg-blue-900/30 p-2 shrink-0">
-                <ListTodo className="h-4 w-4 text-blue-600" />
+      {tab === "active" ? (
+        <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-3">
+          <Card
+            className={cn(
+              "relative overflow-hidden cursor-pointer transition-all hover:ring-2 hover:ring-offset-2 hover:ring-primary/20",
+              preset === "all" && "ring-2 ring-offset-2 ring-primary/30"
+            )}
+            onClick={() => { setPreset("all"); setTab("active"); }}
+          >
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Active</p>
+                <div className="rounded-lg bg-blue-100 dark:bg-blue-900/30 p-2 shrink-0">
+                  <ListTodo className="h-4 w-4 text-blue-600" />
+                </div>
               </div>
-            </div>
-            {isLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <p className="text-2xl sm:text-3xl font-bold">{stats.total}</p>
+              {isLoading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <p className="text-2xl sm:text-3xl font-bold">{activeStats.total}</p>
+              )}
+            </CardContent>
+          </Card>
+          <Card
+            className={cn(
+              "relative overflow-hidden cursor-pointer transition-all hover:ring-2 hover:ring-offset-2 hover:ring-primary/20",
+              preset === "pending" && "ring-2 ring-offset-2 ring-amber-400/50"
             )}
-          </CardContent>
-        </Card>
-        <Card className="relative overflow-hidden">
-          <CardContent className="p-3 sm:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pending</p>
-              <div className="rounded-lg bg-amber-100 dark:bg-amber-900/30 p-2 shrink-0">
-                <Circle className="h-4 w-4 text-amber-600" />
+            onClick={() => { setPreset(preset === "pending" ? "all" : "pending"); setTab("active"); }}
+          >
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pending</p>
+                <div className="rounded-lg bg-amber-100 dark:bg-amber-900/30 p-2 shrink-0">
+                  <Circle className="h-4 w-4 text-amber-600" />
+                </div>
               </div>
-            </div>
-            {isLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <p className="text-2xl sm:text-3xl font-bold">{stats.pending}</p>
+              {isLoading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <p className="text-2xl sm:text-3xl font-bold">{activeStats.pending}</p>
+              )}
+              {!isLoading && activeStats.total > 0 && (
+                <Progress value={(activeStats.pending / activeStats.total) * 100} className="mt-3 h-1.5" />
+              )}
+            </CardContent>
+          </Card>
+          <Card
+            className={cn(
+              "relative overflow-hidden cursor-pointer transition-all hover:ring-2 hover:ring-offset-2 hover:ring-primary/20",
+              preset === "overdue" && "ring-2 ring-offset-2 ring-red-400/50"
             )}
-            {!isLoading && stats.total > 0 && (
-              <Progress value={(stats.pending / stats.total) * 100} className="mt-3 h-1.5" />
-            )}
-          </CardContent>
-        </Card>
-        <Card className="relative overflow-hidden">
-          <CardContent className="p-3 sm:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Completed</p>
-              <div className="rounded-lg bg-green-100 dark:bg-green-900/30 p-2 shrink-0">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
+            onClick={() => { setPreset(preset === "overdue" ? "all" : "overdue"); setTab("active"); }}
+          >
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Overdue</p>
+                <div className="rounded-lg bg-red-100 dark:bg-red-900/30 p-2 shrink-0">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                </div>
               </div>
-            </div>
-            {isLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <p className="text-2xl sm:text-3xl font-bold">{stats.completed}</p>
-            )}
-            {!isLoading && stats.total > 0 && (
-              <Progress value={(stats.completed / stats.total) * 100} className="mt-3 h-1.5" />
-            )}
-          </CardContent>
-        </Card>
-        <Card className="relative overflow-hidden">
-          <CardContent className="p-3 sm:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Overdue</p>
-              <div className="rounded-lg bg-red-100 dark:bg-red-900/30 p-2 shrink-0">
-                <AlertCircle className="h-4 w-4 text-red-600" />
+              {isLoading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <p className="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400">{activeStats.overdue}</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-1 max-w-xs">
+          <Card className="relative overflow-hidden">
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Completed</p>
+                <div className="rounded-lg bg-green-100 dark:bg-green-900/30 p-2 shrink-0">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                </div>
               </div>
-            </div>
-            {isLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <p className="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400">{stats.overdue}</p>
+              {isLoading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <p className="text-2xl sm:text-3xl font-bold">{completedStats.total}</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <Tabs value={tab} onValueChange={(v) => { setTab(v as "active" | "completed"); setPreset("all"); }}>
+        <TabsList>
+          <TabsTrigger value="active" className="gap-2">
+            Active
+            {!isLoading && (
+              <span className="ml-1 text-xs text-muted-foreground">({activeStats.total})</span>
             )}
-          </CardContent>
-        </Card>
-      </div>
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="gap-2">
+            Completed
+            {!isLoading && (
+              <span className="ml-1 text-xs text-muted-foreground">({completedStats.total})</span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
@@ -239,18 +314,20 @@ export default function TasksPage() {
             className="h-9 w-full pl-8 text-sm"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="h-9 w-full sm:w-[140px] text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {tab === "active" && (
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-9 w-full sm:w-[140px] text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ACTIVE_STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
           <SelectTrigger className="h-9 w-full sm:w-[140px] text-sm">
             <SelectValue />
@@ -263,12 +340,29 @@ export default function TasksPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={unitKerjaFilter} onValueChange={(v) => setUnitKerjaFilter(v === "__all__" ? "" : v)}>
+          <SelectTrigger className="h-9 w-full sm:w-[160px] text-sm">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <SelectValue placeholder="Unit Kerja" />
+            </div>
+          </SelectTrigger>
+          <SelectContent className="max-h-60">
+            <SelectItem value="__all__">Semua unit kerja</SelectItem>
+            {(unitKerjaList || []).map((uk) => (
+              <SelectItem key={uk.id} value={uk.id}>
+                {uk.kode} - {uk.nama}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {activeFilters && (
           <button
             onClick={() => {
               setSearch("");
               setStatusFilter("all");
               setPriorityFilter("all");
+              setUnitKerjaFilter("");
             }}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
           >
@@ -277,11 +371,26 @@ export default function TasksPage() {
         )}
       </div>
 
+      {/* Preset indicator */}
+      {preset !== "all" && (
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="gap-1.5 px-2.5 py-1 text-xs font-normal">
+            {preset === "pending" ? "Pending Tasks" : "Overdue Tasks"}
+            <button
+              onClick={() => setPreset("all")}
+              className="ml-0.5 hover:text-foreground transition-colors"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        </div>
+      )}
+
       {/* Task count */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <ListTodo className="h-4 w-4" />
         <span>
-          {filtered.length} of {tasks.length} tasks
+          {filtered.length} {filtered.length === 1 ? "task" : "tasks"}
         </span>
       </div>
 
@@ -312,11 +421,21 @@ export default function TasksPage() {
           <div className="px-4 py-16 text-center">
             <ListTodo className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
             <p className="font-medium text-muted-foreground">
-              {tasks.length === 0 ? "No tasks yet" : "No tasks match your filters"}
+              {tasks.length === 0
+                ? "No tasks yet"
+                : preset === "pending"
+                ? "No pending tasks"
+                : preset === "overdue"
+                ? "No overdue tasks"
+                : tab === "completed"
+                ? "No completed tasks"
+                : "No tasks match your filters"}
             </p>
             <p className="text-sm text-muted-foreground/60 mt-1">
               {tasks.length === 0
                 ? "Create tasks in your projects to see them here"
+                : preset !== "all"
+                ? "Try adjusting your filters or create a new task"
                 : "Try adjusting your search or filter criteria"}
             </p>
           </div>
@@ -337,127 +456,289 @@ export default function TasksPage() {
                 </div>
 
                 {/* Task Rows */}
-                <div className="divide-y">
-                  {projectTasks.map((task) => {
-                    const isOverdue =
-                      task.dueDate &&
-                      new Date(task.dueDate) < new Date() &&
-                      task.status !== TaskStatus.completed;
-                    const priority = PRIORITY_STYLES[task.priority];
-                    const assignees = task.assignments ?? [];
-
-                    const subtaskCount = task.subtasks?.length ?? 0;
-                    const commentCount = task.comments?.length ?? 0;
-                    const attachmentCount = task.attachments?.length ?? 0;
-
-                    return (
-                      <div
-                        key={task.id}
-                        onClick={() => setSelectedTask(task)}
-                        className="group grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-1.5 sm:gap-4 px-3 sm:px-5 py-2.5 sm:py-3.5 transition-colors hover:bg-accent/40 cursor-pointer"
-                      >
-                        <div className="min-w-0 space-y-1.5">
-                          {/* Title row */}
-                          <div className="flex items-start gap-2">
-                            <div className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", priority.dot)} />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
-                                {task.title}
-                              </p>
-                              {task.description && (
-                                <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                  {stripHtml(task.description)}
+                {tab === "completed" ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3 sm:p-4">
+                    {projectTasks.map((task) => {
+                      const assignees = task.assignments ?? [];
+                      const labels = task.labels ?? [];
+                      const subtaskTotal = task.subtasks?.length ?? 0;
+                      const subtaskDone = task.subtasks?.filter((s) => s.status === TaskStatus.completed).length ?? 0;
+                      const commentCount = task._count?.comments ?? task.comments?.length ?? 0;
+                      const attachmentCount = task._count?.attachments ?? task.attachments?.length ?? 0;
+                      const priority = PRIORITY_STYLES[task.priority];
+                      const completedBy = task.updatedBy;
+                      const wasOverdue = task.dueDate && new Date(task.dueDate) < new Date(task.updatedAt);
+                      return (
+                        <div
+                          key={task.id}
+                          onClick={() => setSelectedTask(task)}
+                          className="group relative flex flex-col gap-2.5 rounded-xl border border-green-200/60 dark:border-green-900/40 bg-gradient-to-br from-green-50/40 via-white to-white dark:from-green-950/10 dark:via-background dark:to-background p-4 text-left transition-all hover:shadow-md hover:border-green-300 dark:hover:border-green-800 cursor-pointer"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                              <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/40">
+                                <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium line-through text-muted-foreground/70 group-hover:text-muted-foreground transition-colors truncate">
+                                  {task.title}
                                 </p>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Meta row */}
-                          <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 pl-4">
-                            <Badge
-                              variant="outline"
-                              className={cn("text-[11px] font-normal h-5 px-1.5", STATUS_BADGE[task.status])}
-                            >
-                              {STATUS_LABELS[task.status] || task.status}
-                            </Badge>
-
-                            <span className={cn("text-[11px] font-medium flex items-center gap-1", priority.label)}>
-                              <Flag className="h-3 w-3" />
-                              {PRIORITY_LABELS[task.priority]}
-                            </span>
-
-                            {task.dueDate && (
-                              <span
-                                className={cn(
-                                  "text-[11px] flex items-center gap-1",
-                                  isOverdue
-                                    ? "text-red-600 dark:text-red-400 font-medium"
-                                    : "text-muted-foreground"
+                                {task.description && (
+                                  <p className="text-xs text-muted-foreground/50 mt-0.5 line-clamp-2">
+                                    {stripHtml(task.description)}
+                                  </p>
                                 )}
-                              >
-                                <Calendar className="h-3 w-3" />
-                                {formatRelativeTime(task.dueDate)}
-                              </span>
+                                {labels.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1.5">
+                                    {labels.slice(0, 3).map((label) => (
+                                      <span
+                                        key={label.id}
+                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground"
+                                      >
+                                        {label.name}
+                                      </span>
+                                    ))}
+                                    {labels.length > 3 && (
+                                      <span className="text-[10px] text-muted-foreground">
+                                        +{labels.length - 3}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            {assignees.length > 0 && (
+                              <div className="flex -space-x-1.5 shrink-0">
+                                {assignees.slice(0, 3).map((u) => (
+                                  <Tooltip key={u.id}>
+                                    <TooltipTrigger asChild>
+                                      <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium ring-2 ring-background">
+                                        {getInitials(u.name)}
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>{u.name}</TooltipContent>
+                                  </Tooltip>
+                                ))}
+                                {assignees.length > 3 && (
+                                  <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium ring-2 ring-background">
+                                    +{assignees.length - 3}
+                                  </div>
+                                )}
+                              </div>
                             )}
-
-                            {subtaskCount > 0 && (
-                              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                <ListTodo className="h-3 w-3" />
-                                {subtaskCount}
+                          </div>
+                          <div className="flex flex-col gap-1 text-xs text-muted-foreground/70 pl-7">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <div className="flex items-center gap-1">
+                                <div className={cn("h-2 w-2 rounded-full", PROJECT_COLORS[colorIdx])} />
+                                <span>{projectName}</span>
+                              </div>
+                              {task.unitKerja && (
+                                <>
+                                  <span className="text-muted-foreground/30">·</span>
+                                  <span className="flex items-center gap-1">
+                                    <Building2 className="h-3 w-3" />
+                                    {task.unitKerja.kode || task.unitKerja.nama}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-green-600 dark:text-green-400 flex items-center gap-1 font-medium">
+                                <CheckCircle2 className="h-3 w-3" />
+                                {formatRelativeTime(task.updatedAt)}
                               </span>
-                            )}
-
-                            {commentCount > 0 && (
-                              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                <MessageSquare className="h-3 w-3" />
-                                {commentCount}
+                              {completedBy && (
+                                <>
+                                  <span className="text-muted-foreground/30">·</span>
+                                  <span>by {completedBy.name}</span>
+                                </>
+                              )}
+                              <span className={cn("flex items-center gap-1", priority.label)}>
+                                <div className={cn("h-1.5 w-1.5 rounded-full", priority.dot)} />
+                                {PRIORITY_LABELS[task.priority]}
                               </span>
-                            )}
-
-                            {attachmentCount > 0 && (
-                              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                <Paperclip className="h-3 w-3" />
-                                {attachmentCount}
-                              </span>
+                            </div>
+                            {(subtaskTotal > 0 || commentCount > 0 || attachmentCount > 0 || task.dueDate) && (
+                              <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                                {subtaskTotal > 0 && (
+                                  <span className="flex items-center gap-1">
+                                    <ListTodo className="h-3 w-3" />
+                                    {subtaskDone}/{subtaskTotal}
+                                  </span>
+                                )}
+                                {commentCount > 0 && (
+                                  <span className="flex items-center gap-1">
+                                    <MessageSquare className="h-3 w-3" />
+                                    {commentCount}
+                                  </span>
+                                )}
+                                {attachmentCount > 0 && (
+                                  <span className="flex items-center gap-1">
+                                    <Paperclip className="h-3 w-3" />
+                                    {attachmentCount}
+                                  </span>
+                                )}
+                                {task.dueDate && (
+                                  <span
+                                    className={cn(
+                                      "flex items-center gap-1",
+                                      wasOverdue
+                                        ? "text-red-500 dark:text-red-400 font-medium"
+                                        : "text-muted-foreground/60"
+                                    )}
+                                  >
+                                    <Calendar className="h-3 w-3" />
+                                    {formatRelativeTime(task.dueDate)}
+                                    {wasOverdue && " (overdue when completed)"}
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
                         </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {projectTasks.map((task) => {
+                      const isOverdue =
+                        task.dueDate &&
+                        new Date(task.dueDate) < new Date() &&
+                        task.status !== TaskStatus.completed;
+                      const priority = PRIORITY_STYLES[task.priority];
+                      const assignees = task.assignments ?? [];
 
-                        {/* Right: assignees + chevron */}
-                        <div className="flex items-center gap-2 sm:self-center justify-end">
-                          {assignees.length > 0 && (
-                            <div className="flex -space-x-1.5">
-                              {assignees.slice(0, 3).map((u) => (
-                                <Tooltip key={u.id}>
-                                  <TooltipTrigger asChild>
-                                    <div
-                                      className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium ring-2 ring-background"
-                                      title={u.name ?? undefined}
-                                    >
-                                      {getInitials(u.name)}
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent>{u.name}</TooltipContent>
-                                </Tooltip>
-                              ))}
-                              {assignees.length > 3 && (
-                                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium ring-2 ring-background">
-                                  +{assignees.length - 3}
-                                </div>
+                      const subtaskCount = task.subtasks?.length ?? 0;
+                      const commentCount = task.comments?.length ?? 0;
+                      const attachmentCount = task.attachments?.length ?? 0;
+
+                      return (
+                        <div
+                          key={task.id}
+                          onClick={() => setSelectedTask(task)}
+                          className="group grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-1.5 sm:gap-4 px-3 sm:px-5 py-2.5 sm:py-3.5 transition-colors hover:bg-accent/40 cursor-pointer"
+                        >
+                          <div className="min-w-0 space-y-1.5">
+                            <div className="flex items-start gap-2">
+                              <div className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", priority.dot)} />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                                  {task.title}
+                                </p>
+                                {task.description && (
+                                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                    {stripHtml(task.description)}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 pl-4">
+                              <Badge
+                                variant="outline"
+                                className={cn("text-[11px] font-normal h-5 px-1.5", STATUS_BADGE[task.status])}
+                              >
+                                {STATUS_LABELS[task.status] || task.status}
+                              </Badge>
+                              <span className={cn("text-[11px] font-medium flex items-center gap-1", priority.label)}>
+                                <Flag className="h-3 w-3" />
+                                {PRIORITY_LABELS[task.priority]}
+                              </span>
+                              {task.unitKerja && (
+                                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                  <Building2 className="h-3 w-3" />
+                                  {task.unitKerja.kode || task.unitKerja.nama}
+                                </span>
+                              )}
+                              {task.dueDate && (
+                                <span
+                                  className={cn(
+                                    "text-[11px] flex items-center gap-1",
+                                    isOverdue
+                                      ? "text-red-600 dark:text-red-400 font-medium"
+                                      : "text-muted-foreground"
+                                  )}
+                                >
+                                  <Calendar className="h-3 w-3" />
+                                  {formatRelativeTime(task.dueDate)}
+                                </span>
+                              )}
+                              {subtaskCount > 0 && (
+                                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                  <ListTodo className="h-3 w-3" />
+                                  {subtaskCount}
+                                </span>
+                              )}
+                              {commentCount > 0 && (
+                                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                  <MessageSquare className="h-3 w-3" />
+                                  {commentCount}
+                                </span>
+                              )}
+                              {attachmentCount > 0 && (
+                                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                  <Paperclip className="h-3 w-3" />
+                                  {attachmentCount}
+                                </span>
                               )}
                             </div>
-                          )}
-                          <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+                          </div>
+                          <div className="flex items-center gap-2 sm:self-center justify-end">
+                            {assignees.length > 0 && (
+                              <div className="flex -space-x-1.5">
+                                {assignees.slice(0, 3).map((u) => (
+                                  <Tooltip key={u.id}>
+                                    <TooltipTrigger asChild>
+                                      <div
+                                        className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium ring-2 ring-background"
+                                        title={u.name ?? undefined}
+                                      >
+                                        {getInitials(u.name)}
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>{u.name}</TooltipContent>
+                                  </Tooltip>
+                                ))}
+                                {assignees.length > 3 && (
+                                  <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium ring-2 ring-background">
+                                    +{assignees.length - 3}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </Card>
             );
           })}
         </div>
       )}
     </div>
+  );
+}
+
+export default function TasksPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-4 w-60 mt-2" />
+        </div>
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+        </div>
+      </div>
+    }>
+      <TasksPageInner />
+    </Suspense>
   );
 }

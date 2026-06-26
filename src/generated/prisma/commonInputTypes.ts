@@ -358,6 +358,23 @@ export type IntWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedIntFilter<$PrismaModel>
 }
 
+export type EnumJenisUnitKerjaFilter<$PrismaModel = never> = {
+  equals?: $Enums.JenisUnitKerja | Prisma.EnumJenisUnitKerjaFieldRefInput<$PrismaModel>
+  in?: $Enums.JenisUnitKerja[] | Prisma.ListEnumJenisUnitKerjaFieldRefInput<$PrismaModel>
+  notIn?: $Enums.JenisUnitKerja[] | Prisma.ListEnumJenisUnitKerjaFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumJenisUnitKerjaFilter<$PrismaModel> | $Enums.JenisUnitKerja
+}
+
+export type EnumJenisUnitKerjaWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.JenisUnitKerja | Prisma.EnumJenisUnitKerjaFieldRefInput<$PrismaModel>
+  in?: $Enums.JenisUnitKerja[] | Prisma.ListEnumJenisUnitKerjaFieldRefInput<$PrismaModel>
+  notIn?: $Enums.JenisUnitKerja[] | Prisma.ListEnumJenisUnitKerjaFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumJenisUnitKerjaWithAggregatesFilter<$PrismaModel> | $Enums.JenisUnitKerja
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumJenisUnitKerjaFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumJenisUnitKerjaFilter<$PrismaModel>
+}
+
 export type EnumNotificationTypeFilter<$PrismaModel = never> = {
   equals?: $Enums.NotificationType | Prisma.EnumNotificationTypeFieldRefInput<$PrismaModel>
   in?: $Enums.NotificationType[] | Prisma.ListEnumNotificationTypeFieldRefInput<$PrismaModel>
@@ -708,6 +725,23 @@ export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
   _sum?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedIntFilter<$PrismaModel>
   _max?: Prisma.NestedIntFilter<$PrismaModel>
+}
+
+export type NestedEnumJenisUnitKerjaFilter<$PrismaModel = never> = {
+  equals?: $Enums.JenisUnitKerja | Prisma.EnumJenisUnitKerjaFieldRefInput<$PrismaModel>
+  in?: $Enums.JenisUnitKerja[] | Prisma.ListEnumJenisUnitKerjaFieldRefInput<$PrismaModel>
+  notIn?: $Enums.JenisUnitKerja[] | Prisma.ListEnumJenisUnitKerjaFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumJenisUnitKerjaFilter<$PrismaModel> | $Enums.JenisUnitKerja
+}
+
+export type NestedEnumJenisUnitKerjaWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.JenisUnitKerja | Prisma.EnumJenisUnitKerjaFieldRefInput<$PrismaModel>
+  in?: $Enums.JenisUnitKerja[] | Prisma.ListEnumJenisUnitKerjaFieldRefInput<$PrismaModel>
+  notIn?: $Enums.JenisUnitKerja[] | Prisma.ListEnumJenisUnitKerjaFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumJenisUnitKerjaWithAggregatesFilter<$PrismaModel> | $Enums.JenisUnitKerja
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumJenisUnitKerjaFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumJenisUnitKerjaFilter<$PrismaModel>
 }
 
 export type NestedEnumNotificationTypeFilter<$PrismaModel = never> = {

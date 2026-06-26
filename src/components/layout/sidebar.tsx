@@ -40,6 +40,7 @@ const navLinks = [
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: ListTodo },
   { href: "/calendar", label: "Calendar", icon: Calendar },
+  { href: "/unit-kerja", label: "Unit Kerja", icon: Building2 },
 ];
 
 const bottomLinks = [

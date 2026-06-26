@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/use-auth";
 import { useWorkspaces } from "@/hooks/use-workspace";
 import { useAllTasks } from "@/hooks/use-tasks";
@@ -423,6 +424,7 @@ function StatsRow({
     inProgressTasks: number;
   };
 }) {
+  const router = useRouter();
   const items = [
     {
       label: "Total Tasks",
@@ -430,6 +432,7 @@ function StatsRow({
       icon: ListTodo,
       color: "text-blue-600",
       bg: "bg-blue-100 dark:bg-blue-900/30",
+      href: "/tasks",
     },
     {
       label: "In Progress",
@@ -437,6 +440,7 @@ function StatsRow({
       icon: Clock,
       color: "text-amber-600",
       bg: "bg-amber-100 dark:bg-amber-900/30",
+      href: "/tasks?tab=active&status=in_progress",
     },
     {
       label: "Completed",
@@ -444,6 +448,7 @@ function StatsRow({
       icon: CheckCircle2,
       color: "text-green-600",
       bg: "bg-green-100 dark:bg-green-900/30",
+      href: "/tasks?tab=completed",
     },
     {
       label: "Overdue",
@@ -451,13 +456,18 @@ function StatsRow({
       icon: AlertCircle,
       color: "text-red-600",
       bg: "bg-red-100 dark:bg-red-900/30",
+      href: "/tasks?tab=active&preset=overdue",
     },
   ];
 
   return (
     <div className="grid gap-2 sm:gap-3 grid-cols-2 lg:grid-cols-4">
       {items.map((item) => (
-        <Card key={item.label}>
+        <Card
+          key={item.label}
+          onClick={() => router.push(item.href)}
+          className="cursor-pointer transition-all hover:ring-2 hover:ring-offset-2 hover:ring-primary/20"
+        >
           <CardContent className="p-3 sm:p-6">
             <div className="flex items-center gap-2 sm:gap-4">
               <div className={`rounded-lg p-1.5 sm:p-2.5 ${item.bg}`}>

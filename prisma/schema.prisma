@@ -27,6 +27,13 @@ enum ProjectStatus {
   completed
 }
 
+enum JenisUnitKerja {
+  KC
+  KCP
+  KK
+  Unit
+}
+
 enum TaskPriority {
   low
   medium
@@ -207,6 +214,7 @@ model Task {
   id              String       @id @default(cuid())
   projectId       String
   parentId        String?
+  unitKerjaId     String?
   title           String
   description     String?
   status          TaskStatus   @default(todo)
@@ -223,6 +231,7 @@ model Task {
   project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   parent      Task?           @relation("TaskSubtasks", fields: [parentId], references: [id])
   subtasks    Task[]          @relation("TaskSubtasks")
+  unitKerja   UnitKerja?      @relation(fields: [unitKerjaId], references: [id], onDelete: SetNull)
   createdBy   User?           @relation("TasksCreated", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy   User?           @relation("TasksUpdated", fields: [updatedById], references: [id], onDelete: SetNull)
   assignments TaskAssignment[]
@@ -235,6 +244,7 @@ model Task {
   @@index([projectId])
   @@index([status])
   @@index([parentId])
+  @@index([unitKerjaId])
   @@index([dueDate])
 }
 
@@ -343,6 +353,23 @@ model ActivityLog {
   @@index([userId])
   @@index([workspaceId])
   @@index([createdAt])
+}
+
+model UnitKerja {
+  id        String         @id @default(cuid())
+  kode      String         @unique
+  nama      String
+  alamat    String?
+  jenis     JenisUnitKerja
+  longitude String?
+  latitude  String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  tasks Task[]
+
+  @@index([kode])
+  @@index([jenis])
 }
 
 model Notification {

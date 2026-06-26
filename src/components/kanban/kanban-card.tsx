@@ -2,7 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MessageSquare, ListChecks, Calendar } from "lucide-react";
+import { GripVertical, MessageSquare, ListChecks, Calendar, Building2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatDate, getInitials, stripHtml } from "@/lib/utils";
@@ -126,6 +126,16 @@ export function KanbanCard({ task, isDragOverlay }: KanbanCardProps) {
             className={cn("px-1.5 py-0 text-[10px] font-medium", priority.className)}
           >
             {priority.label}
+          </Badge>
+        )}
+
+        {task.unitKerja && (
+          <Badge
+            variant="secondary"
+            className="px-1.5 py-0 text-[10px] font-medium gap-1"
+          >
+            <Building2 className="h-3 w-3" />
+            {task.unitKerja.kode || task.unitKerja.nama}
           </Badge>
         )}
 

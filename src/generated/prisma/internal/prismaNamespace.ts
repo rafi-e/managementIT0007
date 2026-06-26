@@ -401,6 +401,7 @@ export const ModelName = {
   TimeEntry: 'TimeEntry',
   NotificationSetting: 'NotificationSetting',
   ActivityLog: 'ActivityLog',
+  UnitKerja: 'UnitKerja',
   Notification: 'Notification'
 } as const
 
@@ -417,7 +418,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "account" | "session" | "verificationToken" | "workspace" | "workspaceMember" | "invitation" | "project" | "label" | "task" | "taskAssignment" | "taskLabel" | "comment" | "attachment" | "timeEntry" | "notificationSetting" | "activityLog" | "notification"
+    modelProps: "user" | "account" | "session" | "verificationToken" | "workspace" | "workspaceMember" | "invitation" | "project" | "label" | "task" | "taskAssignment" | "taskLabel" | "comment" | "attachment" | "timeEntry" | "notificationSetting" | "activityLog" | "unitKerja" | "notification"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1679,6 +1680,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    UnitKerja: {
+      payload: Prisma.$UnitKerjaPayload<ExtArgs>
+      fields: Prisma.UnitKerjaFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UnitKerjaFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnitKerjaPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UnitKerjaFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnitKerjaPayload>
+        }
+        findFirst: {
+          args: Prisma.UnitKerjaFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnitKerjaPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UnitKerjaFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnitKerjaPayload>
+        }
+        findMany: {
+          args: Prisma.UnitKerjaFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnitKerjaPayload>[]
+        }
+        create: {
+          args: Prisma.UnitKerjaCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnitKerjaPayload>
+        }
+        createMany: {
+          args: Prisma.UnitKerjaCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UnitKerjaCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnitKerjaPayload>[]
+        }
+        delete: {
+          args: Prisma.UnitKerjaDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnitKerjaPayload>
+        }
+        update: {
+          args: Prisma.UnitKerjaUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnitKerjaPayload>
+        }
+        deleteMany: {
+          args: Prisma.UnitKerjaDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UnitKerjaUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UnitKerjaUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnitKerjaPayload>[]
+        }
+        upsert: {
+          args: Prisma.UnitKerjaUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnitKerjaPayload>
+        }
+        aggregate: {
+          args: Prisma.UnitKerjaAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUnitKerja>
+        }
+        groupBy: {
+          args: Prisma.UnitKerjaGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UnitKerjaGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UnitKerjaCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UnitKerjaCountAggregateOutputType> | number
+        }
+      }
+    }
     Notification: {
       payload: Prisma.$NotificationPayload<ExtArgs>
       fields: Prisma.NotificationFieldRefs
@@ -1913,6 +1988,7 @@ export const TaskScalarFieldEnum = {
   id: 'id',
   projectId: 'projectId',
   parentId: 'parentId',
+  unitKerjaId: 'unitKerjaId',
   title: 'title',
   description: 'description',
   status: 'status',
@@ -2016,6 +2092,21 @@ export const ActivityLogScalarFieldEnum = {
 } as const
 
 export type ActivityLogScalarFieldEnum = (typeof ActivityLogScalarFieldEnum)[keyof typeof ActivityLogScalarFieldEnum]
+
+
+export const UnitKerjaScalarFieldEnum = {
+  id: 'id',
+  kode: 'kode',
+  nama: 'nama',
+  alamat: 'alamat',
+  jenis: 'jenis',
+  longitude: 'longitude',
+  latitude: 'latitude',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UnitKerjaScalarFieldEnum = (typeof UnitKerjaScalarFieldEnum)[keyof typeof UnitKerjaScalarFieldEnum]
 
 
 export const NotificationScalarFieldEnum = {
@@ -2210,6 +2301,20 @@ export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMode
 
 
 /**
+ * Reference to a field of type 'JenisUnitKerja'
+ */
+export type EnumJenisUnitKerjaFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'JenisUnitKerja'>
+    
+
+
+/**
+ * Reference to a field of type 'JenisUnitKerja[]'
+ */
+export type ListEnumJenisUnitKerjaFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'JenisUnitKerja[]'>
+    
+
+
+/**
  * Reference to a field of type 'NotificationType'
  */
 export type EnumNotificationTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'NotificationType'>
@@ -2349,6 +2454,7 @@ export type GlobalOmitConfig = {
   timeEntry?: Prisma.TimeEntryOmit
   notificationSetting?: Prisma.NotificationSettingOmit
   activityLog?: Prisma.ActivityLogOmit
+  unitKerja?: Prisma.UnitKerjaOmit
   notification?: Prisma.NotificationOmit
 }
 

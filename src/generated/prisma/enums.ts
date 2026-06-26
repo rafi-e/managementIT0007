@@ -38,6 +38,16 @@ export const ProjectStatus = {
 export type ProjectStatus = (typeof ProjectStatus)[keyof typeof ProjectStatus]
 
 
+export const JenisUnitKerja = {
+  KC: 'KC',
+  KCP: 'KCP',
+  KK: 'KK',
+  Unit: 'Unit'
+} as const
+
+export type JenisUnitKerja = (typeof JenisUnitKerja)[keyof typeof JenisUnitKerja]
+
+
 export const TaskPriority = {
   low: 'low',
   medium: 'medium',

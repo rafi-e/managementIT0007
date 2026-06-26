@@ -127,6 +127,11 @@ export type NotificationSetting = Prisma.NotificationSettingModel
  */
 export type ActivityLog = Prisma.ActivityLogModel
 /**
+ * Model UnitKerja
+ * 
+ */
+export type UnitKerja = Prisma.UnitKerjaModel
+/**
  * Model Notification
  * 
  */
