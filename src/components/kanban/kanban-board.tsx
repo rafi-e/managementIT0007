@@ -112,7 +112,8 @@ export function KanbanBoard({ tasks: propTasks, isLoading, error, onRetry }: Kan
 
       if (sourceColumnId === overColumnId) {
         destTasks.splice(sourceIndex, 1);
-        destTasks.splice(overIndex, 0, movedTask);
+        const adjustedIndex = overIndex > sourceIndex ? overIndex - 1 : overIndex;
+        destTasks.splice(adjustedIndex, 0, movedTask);
       } else {
         destTasks.splice(overIndex, 0, movedTask);
       }
@@ -147,7 +148,11 @@ export function KanbanBoard({ tasks: propTasks, isLoading, error, onRetry }: Kan
       );
 
       if (statusChanged) {
-        updateTask.mutate({ id: movedTask.id, data: { status: newStatus, order: movedTask.order } });
+        const movedInUpdated = updatedTasks.find((t) => t.id === movedTask.id);
+        updateTask.mutate({
+          id: movedTask.id,
+          data: { status: newStatus, order: movedInUpdated?.order ?? movedTask.order },
+        });
       }
       reorderTasks.mutate(updates);
     },

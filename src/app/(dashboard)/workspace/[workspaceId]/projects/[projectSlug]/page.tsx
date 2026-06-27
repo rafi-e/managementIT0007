@@ -5,19 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import { useTasks } from "@/hooks/use-tasks";
 import { useTaskStore } from "@/store/use-task-store";
 import { useProjects } from "@/hooks/use-projects";
+import { UnitKerjaSelect } from "@/components/ui/unit-kerja-select";
 import { useUnitKerjaList } from "@/hooks/use-unit-kerja";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { KanbanBoard } from "@/components/kanban/kanban-board";
 import { TaskCreateDialog } from "@/components/tasks/task-create-dialog";
 import { TaskCalendarView } from "@/components/tasks/task-calendar-view";
@@ -181,31 +175,17 @@ export default function ProjectPage() {
       {tasks && tasks.length > 0 && (
         <div className="flex items-center gap-2">
           <div className="relative w-full max-w-[280px]">
-            <Select
+            <UnitKerjaSelect
               value={filterUnitKerjaId}
               onValueChange={(v) => setFilterUnitKerjaId(v === "__all__" ? "" : v)}
-            >
-              <SelectTrigger className="h-9 text-sm pl-8">
-                <div className="absolute left-2.5 top-1/2 -translate-y-1/2">
-                  <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                </div>
-                <SelectValue placeholder="Semua unit kerja" />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                <SelectItem value="__all__">Semua unit kerja</SelectItem>
-                {unitKerjaLoading ? (
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground">Memuat...</div>
-                ) : (unitKerjaList || []).length === 0 ? (
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground">Tidak ada data</div>
-                ) : (
-                  (unitKerjaList || []).map((uk) => (
-                    <SelectItem key={uk.id} value={uk.id}>
-                      {uk.kode} - {uk.nama}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+              placeholder="Semua unit kerja"
+              options={unitKerjaList || []}
+              loading={unitKerjaLoading}
+              includeAllOption
+              allLabel="Semua unit kerja"
+              showBuildingIcon
+              triggerClassName="h-9 text-sm pl-8"
+            />
           </div>
           {filterUnitKerjaId && (
             <Button
@@ -257,7 +237,7 @@ export default function ProjectPage() {
         </div>
       ) 
       : viewMode === "kanban" ? (
-        <KanbanBoard tasks={filteredTasks} />
+        <KanbanBoard tasks={filterUnitKerjaId ? filteredTasks : undefined} />
       ) 
       : viewMode === "list" ? (
         <ListView tasks={filteredTasks} />

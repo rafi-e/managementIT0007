@@ -22,6 +22,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTaskStore } from "@/store/use-task-store";
 import { useUpdateTask, useDeleteTask, useDeleteAttachment, useAddComment, useTask } from "@/hooks/use-tasks";
+import { UnitKerjaSelect } from "@/components/ui/unit-kerja-select";
 import { useUnitKerjaList } from "@/hooks/use-unit-kerja";
 import { RichTextEditor } from "./rich-text-editor";
 import {
@@ -504,28 +505,14 @@ function TaskModalInner({ task }: { task: Task }) {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-muted-foreground">Unit Kerja</Label>
-                    <Select
+                    <UnitKerjaSelect
                       value={unitKerjaId || "__none__"}
                       onValueChange={(v) => setUnitKerjaId(v === "__none__" ? "" : v)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih unit kerja" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60">
-                        <SelectItem value="__none__">Tidak ada</SelectItem>
-                        {unitKerjaLoading ? (
-                          <div className="px-2 py-1.5 text-sm text-muted-foreground">Memuat...</div>
-                        ) : (unitKerjaList || []).length === 0 ? (
-                          <div className="px-2 py-1.5 text-sm text-muted-foreground">Tidak ada data unit kerja</div>
-                        ) : (
-                          (unitKerjaList || []).map((uk) => (
-                            <SelectItem key={uk.id} value={uk.id}>
-                              {uk.kode} - {uk.nama}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Pilih unit kerja"
+                      options={unitKerjaList || []}
+                      loading={unitKerjaLoading}
+                      noneLabel="Tidak ada data unit kerja"
+                    />
                   </div>
                 </div>
 

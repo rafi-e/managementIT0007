@@ -4,6 +4,7 @@ import { useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useCurrentUser } from "@/hooks/use-auth";
 import { useAllTasks } from "@/hooks/use-tasks";
+import { UnitKerjaSelect } from "@/components/ui/unit-kerja-select";
 import { useUnitKerjaList } from "@/hooks/use-unit-kerja";
 import { useTaskStore } from "@/store/use-task-store";
 import { Card, CardContent } from "@/components/ui/card";
@@ -340,22 +341,16 @@ function TasksPageInner() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={unitKerjaFilter} onValueChange={(v) => setUnitKerjaFilter(v === "__all__" ? "" : v)}>
-          <SelectTrigger className="h-9 w-full sm:w-[160px] text-sm">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <SelectValue placeholder="Unit Kerja" />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="max-h-60">
-            <SelectItem value="__all__">Semua unit kerja</SelectItem>
-            {(unitKerjaList || []).map((uk) => (
-              <SelectItem key={uk.id} value={uk.id}>
-                {uk.kode} - {uk.nama}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <UnitKerjaSelect
+          value={unitKerjaFilter}
+          onValueChange={(v) => setUnitKerjaFilter(v === "__all__" ? "" : v)}
+          placeholder="Unit Kerja"
+          options={unitKerjaList || []}
+          includeAllOption
+          allLabel="Semua unit kerja"
+          showBuildingIcon
+          triggerClassName="h-9 w-full sm:w-[160px] text-sm"
+        />
         {activeFilters && (
           <button
             onClick={() => {

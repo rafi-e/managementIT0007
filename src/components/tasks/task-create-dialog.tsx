@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateTask } from "@/hooks/use-tasks";
+import { UnitKerjaSelect } from "@/components/ui/unit-kerja-select";
 import { useUnitKerjaList } from "@/hooks/use-unit-kerja";
 import { TaskStatus, TaskPriority } from "@/types";
 import { Plus, ListTodo, CalendarDays, Flag, Building2, Loader2 } from "lucide-react";
@@ -177,28 +178,15 @@ export function TaskCreateDialog({
               </span>
               Unit Kerja
             </Label>
-            <Select
+            <UnitKerjaSelect
               value={selectedUnitKerjaId}
               onValueChange={(v) => setSelectedUnitKerjaId(v === "__none__" ? "" : v)}
-            >
-              <SelectTrigger className="h-10">
-                <SelectValue placeholder="Pilih unit kerja (opsional)" />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                <SelectItem value="__none__">Tidak ada</SelectItem>
-                {unitKerjaLoading ? (
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground">Memuat...</div>
-                ) : (unitKerjaList || []).length === 0 ? (
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground">Tidak ada data unit kerja</div>
-                ) : (
-                  (unitKerjaList || []).map((uk) => (
-                    <SelectItem key={uk.id} value={uk.id}>
-                      {uk.kode} - {uk.nama}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+              placeholder="Pilih unit kerja (opsional)"
+              options={unitKerjaList || []}
+              loading={unitKerjaLoading}
+              noneLabel="Tidak ada data unit kerja"
+              triggerClassName="h-10"
+            />
           </div>
         </div>
 
