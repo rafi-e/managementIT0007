@@ -349,7 +349,7 @@ function TasksPageInner() {
           includeAllOption
           allLabel="Semua unit kerja"
           showBuildingIcon
-          triggerClassName="h-9 w-full sm:w-[160px] text-sm"
+          triggerClassName="h-9 w-full sm:w-[240px] text-sm"
         />
         {activeFilters && (
           <button

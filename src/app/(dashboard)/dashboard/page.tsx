@@ -498,12 +498,12 @@ function WorkspacesRow({
         <Building2 className="h-5 w-5" />
         Workspaces
       </h2>
-      <div className="grid grid-cols-1 sm:flex sm:gap-3 sm:overflow-x-auto gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
         {workspaces.map((ws) => (
           <Link
             key={ws.id}
             href={`/workspace/${ws.id}`}
-            className="flex items-center gap-3 rounded-lg border p-3 sm:min-w-[200px] sm:shrink-0 hover:bg-accent transition-colors"
+            className="flex items-center gap-3 rounded-lg border p-3 hover:bg-accent transition-colors"
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-sm">
               {ws.icon || <Hash className="h-4 w-4 text-primary" />}

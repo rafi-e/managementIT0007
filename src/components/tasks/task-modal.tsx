@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ImageLightbox } from "./image-lightbox";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@supabase/supabase-js";
 import { saveAttachmentData } from "@/actions/attachment";
@@ -100,6 +101,7 @@ function TaskModalInner({ task }: { task: Task }) {
   const [titleEditing, setTitleEditing] = useState(false);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [unitKerjaId, setUnitKerjaId] = useState<string>(task.unitKerjaId || "");
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const { data: unitKerjaList, isLoading: unitKerjaLoading } = useUnitKerjaList();
   const supabase = useMemo(() => createClient(
@@ -623,10 +625,11 @@ function TaskModalInner({ task }: { task: Task }) {
               </div>
               {localAttachments.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {localAttachments.map((att) => (
+                  {localAttachments.map((att, i) => (
                     <div
                       key={att.id}
-                      className="group relative overflow-hidden rounded-lg border bg-card"
+                      className="group relative overflow-hidden rounded-lg border bg-card cursor-pointer"
+                      onClick={() => setLightboxIndex(i)}
                     >
                       <img
                         src={att.url}
@@ -636,7 +639,7 @@ function TaskModalInner({ task }: { task: Task }) {
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200" />
                       <button
-                        onClick={() => handleDeleteAttachment(att.id)}
+                        onClick={(e) => { e.stopPropagation(); handleDeleteAttachment(att.id); }}
                         disabled={deleteAttachment.isPending}
                         className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity duration-200 hover:bg-red-500 group-hover:opacity-100 disabled:opacity-50"
                       >
@@ -697,6 +700,15 @@ function TaskModalInner({ task }: { task: Task }) {
           )}
         </div>
       </div>
+
+      {lightboxIndex !== null && (
+        <ImageLightbox
+          images={localAttachments.map((a) => ({ url: a.url, name: a.name }))}
+          currentIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onNavigate={setLightboxIndex}
+        />
+      )}
     </DialogContent>
   );
 }

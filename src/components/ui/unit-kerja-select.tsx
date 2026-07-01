@@ -1,15 +1,20 @@
 "use client";
 
-import { useState, useRef } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Search, Building2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Check, ChevronsUpDown, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { UnitKerja } from "@/types";
 
 interface UnitKerjaSelectProps {
@@ -42,9 +47,20 @@ export function UnitKerjaSelect({
   triggerClassName,
   showBuildingIcon,
 }: UnitKerjaSelectProps) {
-  const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const selectedOption = value
+    ? options.find((uk) => uk.id === value) || null
+    : null;
+
+  const displayValue =
+    value === allValue
+      ? allLabel
+      : selectedOption
+      ? `${selectedOption.kode} - ${selectedOption.jenis} ${selectedOption.nama}`
+      : "";
 
   const filteredOptions = options.filter((uk) => {
     const q = search.toLowerCase();
@@ -55,43 +71,48 @@ export function UnitKerjaSelect({
     );
   });
 
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  }, [open]);
+
   return (
-    <Select
-      value={value}
-      onValueChange={onValueChange}
+    <Popover
       open={open}
       onOpenChange={(o) => {
         setOpen(o);
         if (!o) setSearch("");
-        if (o) {
-          setTimeout(() => inputRef.current?.focus(), 0);
-        }
       }}
     >
-      <SelectTrigger className={triggerClassName}>
-        {showBuildingIcon && (
-          <div className="flex items-center gap-2">
-            <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <SelectValue placeholder={placeholder} />
-          </div>
-        )}
-        {!showBuildingIcon && <SelectValue placeholder={placeholder} />}
-      </SelectTrigger>
-      <SelectContent className={cn("max-h-80", className)}>
+      <PopoverTrigger asChild>
         <div
-          className="flex items-center gap-1.5 border-b px-2 pb-1.5 mb-1.5"
-          onPointerDown={(e) => {
-            e.stopPropagation();
-          }}
+          role="combobox"
+          aria-expanded={open}
+          className={cn(
+            "flex h-9 w-full items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background focus-within:ring-1 focus-within:ring-ring",
+            triggerClassName
+          )}
         >
-          <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          {showBuildingIcon && (
+            <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          )}
           <input
             ref={inputRef}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari unit kerja..."
-            className="flex h-8 w-full bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground"
+            value={open ? search : displayValue}
+            onChange={(e) => {
+              if (!open) setOpen(true);
+              setSearch(e.target.value);
+            }}
+            onFocus={() => {
+              if (!open) setOpen(true);
+            }}
+            placeholder={open ? "Cari unit kerja..." : displayValue || placeholder}
+            className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
             onPointerDown={(e) => {
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
               e.stopPropagation();
             }}
             onKeyDown={(e) => {
@@ -107,26 +128,72 @@ export function UnitKerjaSelect({
               }
             }}
           />
+          <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
         </div>
-        {includeAllOption && <SelectItem value={allValue}>{allLabel}</SelectItem>}
-        {loading ? (
-          <div className="px-2 py-1.5 text-sm text-muted-foreground">Memuat...</div>
-        ) : filteredOptions.length === 0 ? (
-          <div className="px-2 py-1.5 text-sm text-muted-foreground">
-            {search ? "Tidak ditemukan" : noneLabel}
-          </div>
-        ) : (
-          filteredOptions.map((uk) => (
-            <SelectItem key={uk.id} value={uk.id}>
-              <span className="inline-flex items-center gap-1.5">
-                <span>
-                  {uk.kode} - {uk.jenis} {uk.nama}
-                </span>
-              </span>
-            </SelectItem>
-          ))
-        )}
-      </SelectContent>
-    </Select>
+      </PopoverTrigger>
+      <PopoverContent
+        className={cn("p-0 min-w-[var(--radix-popover-trigger-width)]", className)}
+        align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
+      >
+        <Command>
+          <CommandList>
+            {loading ? (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                Memuat...
+              </div>
+            ) : filteredOptions.length === 0 ? (
+              <CommandEmpty>
+                {search ? "Tidak ditemukan" : noneLabel}
+              </CommandEmpty>
+            ) : (
+              <>
+                {includeAllOption && (
+                  <CommandGroup>
+                    <CommandItem
+                      onSelect={() => {
+                        onValueChange(allValue);
+                        setOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          value === allValue ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {allLabel}
+                    </CommandItem>
+                  </CommandGroup>
+                )}
+                <CommandGroup>
+                  {filteredOptions.map((uk) => (
+                    <CommandItem
+                      key={uk.id}
+                      onSelect={() => {
+                        onValueChange(uk.id);
+                        setOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          value === uk.id ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <span>
+                        {uk.kode} - {uk.jenis} {uk.nama}
+                      </span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

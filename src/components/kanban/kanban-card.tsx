@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, MessageSquare, ListChecks, Calendar, Building2 } from "lucide-react";
+import { ImageLightbox } from "@/components/tasks/image-lightbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatDate, getInitials, stripHtml } from "@/lib/utils";
@@ -25,6 +27,8 @@ const priorityConfig: Record<TaskPriority, { label: string; className: string }>
 
 export function KanbanCard({ task, isDragOverlay }: KanbanCardProps) {
   const setSelectedTask = useTaskStore((s) => s.setSelectedTask);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const {
     attributes,
@@ -64,7 +68,10 @@ export function KanbanCard({ task, isDragOverlay }: KanbanCardProps) {
       {...(!isDragOverlay ? listeners : {})}
     >
       {task.attachments && task.attachments.length > 0 && (
-        <div className="mb-2 -mx-2.5 -mt-2.5 sm:-mx-3 sm:-mt-3 overflow-hidden rounded-t-lg">
+        <div
+          className="mb-2 -mx-2.5 -mt-2.5 sm:-mx-3 sm:-mt-3 overflow-hidden rounded-t-lg cursor-pointer"
+          onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
+        >
           <img
             src={task.attachments[0].url}
             alt={task.attachments[0].name}
@@ -195,6 +202,14 @@ export function KanbanCard({ task, isDragOverlay }: KanbanCardProps) {
           Created by {task.createdBy.name}
         </p>
       ) : null}
+      {lightboxOpen && task.attachments && (
+        <ImageLightbox
+          images={task.attachments.map((a) => ({ url: a.url, name: a.name }))}
+          currentIndex={lightboxIndex}
+          onClose={() => setLightboxOpen(false)}
+          onNavigate={setLightboxIndex}
+        />
+      )}
     </div>
   );
 
